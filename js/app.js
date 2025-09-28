@@ -1,3 +1,5 @@
+import { API_KEY } from "../config.js";
+
 const options = {
   method: "GET",
   headers: {
