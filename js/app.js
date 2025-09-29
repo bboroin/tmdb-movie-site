@@ -24,13 +24,15 @@ function renderMovies(movies) {
     card.classList.add("card");
 
     card.innerHTML = `
-      <div class="card-average">⭐${Math.round(num * 10) / 10}</div>
       <div class="card-img">
         <img src="https://image.tmdb.org/t/p/w500/${movie.poster_path}" alt="${
       movie.title
     }" />
       </div>
       <div class="card-title">${movie.title}</div>
+      <div class="card-average">⭐${
+        Math.round(movie.vote_average * 10) / 10
+      }</div>
       <div class="card-description">${movie.overview}</div>
     `;
 
