@@ -198,3 +198,22 @@ function openModal(detail) {
 document.getElementById("modal-close").addEventListener("click", () => {
   document.getElementById("modal").classList.add("hidden");
 });
+
+const popularTab = document.getElementById("popular");
+const bookmarkTab = document.getElementById("bookmark");
+
+popularTab.addEventListener("click", () => {
+  popularTab.classList.add("active");
+  bookmarkTab.classList.remove("active");
+  getPopularMovie();
+});
+
+bookmarkTab.addEventListener("click", () => {
+  bookmarkTab.classList.add("active");
+  popularTab.classList.remove("active");
+
+  const bookmarks = loadBookmarks();
+  const movies = Array.from(bookmarks.values());
+
+  renderMovies(movies);
+});
