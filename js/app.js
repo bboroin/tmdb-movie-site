@@ -8,6 +8,45 @@ const options = {
   },
 };
 
+const movieData = new Map();
+
+const BOOKMARK_KEY = "tmdb:bookmarks";
+let currentBookmark = null;
+
+function loadBookmarks() {
+  return new Map(
+    Object.entries(JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}"))
+  );
+}
+
+function saveBookmarks(data) {
+  localStorage.setItem(BOOKMARK_KEY, JSON.stringify(Object.fromEntries(data)));
+}
+
+function isBookmarked(id) {
+  return loadBookmarks().has(String(id));
+}
+
+function toggleBookmark(detail) {
+  const bookmarks = loadBookmarks();
+  const movieId = String(detail.id);
+  let on;
+  if (bookmarks.has(movieId)) {
+    bookmarks.delete(movieId);
+    on = false;
+  } else {
+    bookmarks.set(movieId, {
+      id: detail.id,
+      title: detail.title,
+      poster_path: detail.poster_path,
+      overview: detail.overview,
+    });
+    on = true;
+  }
+  saveBookmarks(bookmarks);
+  return on;
+}
+
 function renderMovies(movies) {
   const cardList = document.getElementById("card-list");
   const message = document.getElementById("message");
@@ -20,13 +59,32 @@ function renderMovies(movies) {
   }
 
   movies.forEach((movie) => {
+    movieData.set(String(movie.id), {
+      id: movie.id,
+      title: movie.title,
+      poster_path: movie.poster_path,
+      overview: movie.overview,
+    });
     const card = document.createElement("div");
     card.classList.add("card");
     card.dataset.id = movie.id;
+    const on = isBookmarked(movie.id);
 
     card.innerHTML = `
+      <button 
+        class="card-bookmark ${on ? "on" : ""}" 
+        aria-pressed="${on}" 
+        aria-label="북마크"
+        data-id="${movie.id}"
+      >
+        <svg class="icon" viewBox="0 0 24 24" width="48" height="48">
+          <path d="M6 4v16l6-4 6 4V4z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
       <div class="card-img">
-        <img src="https://image.tmdb.org/t/p/w500/${movie.poster_path}" alt="${movie.title}" />
+        <img src="https://image.tmdb.org/t/p/w500/${movie.poster_path}" alt="${
+      movie.title
+    }" />
       </div>
       <div class="card-title">${movie.title}</div>
       <div class="card-description">${movie.overview}</div>
@@ -80,6 +138,19 @@ document.getElementById("search-input").addEventListener("keydown", (e) => {
 
 const cardList = document.getElementById("card-list");
 cardList.addEventListener("click", async (e) => {
+  const bookmarkBtn = e.target.closest(".card-bookmark");
+  if (bookmarkBtn) {
+    e.stopPropagation();
+    const id = String(bookmarkBtn.dataset.id);
+    const detail = movieData.get(id);
+    if (!detail) return;
+
+    const on = toggleBookmark(detail);
+    bookmarkBtn.classList.toggle("on", on);
+    bookmarkBtn.setAttribute("aria-pressed", String(on));
+    return;
+  }
+
   const card = e.target.closest(".card");
   if (!card) return;
 
