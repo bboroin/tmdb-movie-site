@@ -6,6 +6,7 @@
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   border-radius: 18px;
@@ -45,4 +46,19 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.card-bookmark {
+  position: absolute;
+  top: -5px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.card-bookmark .icon path {
+  stroke: #ffd000ff;
+}
+.card-bookmark.on .icon path {
+  fill: #ffd000ff;
 }
