@@ -1,55 +1,43 @@
-import { API_KEY } from "../config.js";
-
-const options = {
-  method: "GET",
-  headers: {
-    accept: "application/json",
-    Authorization: `Bearer ${API_KEY}`,
-  },
-};
+import {
+  fetchPopularMovies,
+  fetchSearchMovies,
+  fetchMovieDetail,
+} from "./tmdb.js";
+import { loadBookmarks, isBookmarked, toggleBookmark } from "./bookmarks.js";
 
 const movieData = new Map();
 
-const BOOKMARK_KEY = "tmdb:bookmarks";
-let currentBookmark = null;
+// 첫 화면 로딩
+loadInitialMovies();
 
-function loadBookmarks() {
-  return new Map(
-    Object.entries(JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}"))
-  );
-}
-
-function saveBookmarks(data) {
-  localStorage.setItem(BOOKMARK_KEY, JSON.stringify(Object.fromEntries(data)));
-}
-
-function isBookmarked(id) {
-  return loadBookmarks().has(String(id));
-}
-
-function toggleBookmark(detail) {
-  const bookmarks = loadBookmarks();
-  const movieId = String(detail.id);
-  let on;
-  if (bookmarks.has(movieId)) {
-    bookmarks.delete(movieId);
-    on = false;
-  } else {
-    bookmarks.set(movieId, {
-      id: detail.id,
-      title: detail.title,
-      poster_path: detail.poster_path,
-      overview: detail.overview,
-    });
-    on = true;
+async function loadInitialMovies() {
+  try {
+    const movies = await fetchPopularMovies();
+    renderMovies(movies);
+  } catch (e) {
+    console.error(e);
   }
-  saveBookmarks(bookmarks);
-  return on;
 }
 
+// 영화 검색
+document.getElementById("search-btn").addEventListener("click", async () => {
+  const query = document.getElementById("search-input").value.trim();
+  if (!query) return;
+  const movies = await fetchSearchMovies(query);
+  renderMovies(movies);
+});
+
+document.getElementById("search-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    document.getElementById("search-btn").click();
+  }
+});
+
+// 영화 카드 목록 렌더링
 function renderMovies(movies) {
   const cardList = document.getElementById("card-list");
   const message = document.getElementById("message");
+
   cardList.innerHTML = "";
   message.textContent = "";
 
@@ -65,9 +53,11 @@ function renderMovies(movies) {
       poster_path: movie.poster_path,
       overview: movie.overview,
     });
+
     const card = document.createElement("div");
     card.classList.add("card");
     card.dataset.id = movie.id;
+
     const on = isBookmarked(movie.id);
 
     card.innerHTML = `
@@ -94,50 +84,10 @@ function renderMovies(movies) {
   });
 }
 
-async function getPopularMovie() {
-  try {
-    const response = await fetch(
-      "https://api.themoviedb.org/3/movie/popular?language=ko-KR&page=1",
-      options
-    );
-    const data = await response.json();
-    renderMovies(data.results);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-async function searchMovie(query) {
-  try {
-    const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(
-        query
-      )}&language=ko-KR&page=1`,
-      options
-    );
-    const data = await response.json();
-    renderMovies(data.results);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-getPopularMovie();
-
-document.getElementById("search-btn").addEventListener("click", () => {
-  const query = document.getElementById("search-input").value.trim();
-  if (query) searchMovie(query);
-});
-
-document.getElementById("search-input").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const query = e.target.value.trim();
-    if (query) searchMovie(query);
-  }
-});
-
+// 영화 카드 : 이벤트 위임
 const cardList = document.getElementById("card-list");
 cardList.addEventListener("click", async (e) => {
+  // 북마크 선택
   const bookmarkBtn = e.target.closest(".card-bookmark");
   if (bookmarkBtn) {
     e.stopPropagation();
@@ -151,24 +101,14 @@ cardList.addEventListener("click", async (e) => {
     return;
   }
 
+  // 카드 선택
   const card = e.target.closest(".card");
   if (!card) return;
-
-  const movieId = card.dataset.id;
-
-  try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${movieId}?language=ko-KR`,
-      options
-    );
-    const detail = await res.json();
-
-    openModal(detail);
-  } catch (err) {
-    console.error(err);
-  }
+  const detail = await fetchMovieDetail(card.dataset.id);
+  openModal(detail);
 });
 
+// 모달창 열기
 function openModal(detail) {
   const modal = document.getElementById("modal");
   const title = document.getElementById("modal-title");
@@ -195,17 +135,20 @@ function openModal(detail) {
   modal.classList.remove("hidden");
 }
 
+// 모달창 닫기
 document.getElementById("modal-close").addEventListener("click", () => {
   document.getElementById("modal").classList.add("hidden");
 });
 
+// 탭 전환
 const popularTab = document.getElementById("popular");
 const bookmarkTab = document.getElementById("bookmark");
 
-popularTab.addEventListener("click", () => {
+popularTab.addEventListener("click", async () => {
   popularTab.classList.add("active");
   bookmarkTab.classList.remove("active");
-  getPopularMovie();
+  const movies = await fetchPopularMovies();
+  renderMovies(movies);
 });
 
 bookmarkTab.addEventListener("click", () => {
