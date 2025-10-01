@@ -1,7 +1,7 @@
 const BOOKMARK_KEY = "tmdb:bookmarks";
 
 // 로컬스토리지에서 북마크 데이터 반환
-export function loadBookmarks() {
+function loadBookmarks() {
   return new Map(
     Object.entries(JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}"))
   );
@@ -15,6 +15,12 @@ function saveBookmarks(data) {
 // 영화의 북마크 여부 확인
 export function isBookmarked(id) {
   return loadBookmarks().has(String(id));
+}
+
+// 북마크된 영화 배열 반환
+export function bookmarkedMovies() {
+  const bookmarks = loadBookmarks();
+  return Array.from(bookmarks.values());
 }
 
 // 북마크 상태 토글 (정보 저장 or 삭제)
@@ -35,5 +41,6 @@ export function toggleBookmark(detail) {
     on = true;
   }
   saveBookmarks(bookmarks);
+  console.log("현재 북마크 목록", bookmarks);
   return on;
 }

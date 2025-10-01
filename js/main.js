@@ -3,7 +3,7 @@ import {
   fetchSearchMovies,
   fetchMovieDetail,
 } from "./tmdb.js";
-import { loadBookmarks, isBookmarked, toggleBookmark } from "./bookmarks.js";
+import { isBookmarked, toggleBookmark, bookmarkedMovies } from "./bookmarks.js";
 
 const movieData = new Map();
 
@@ -98,6 +98,11 @@ cardList.addEventListener("click", async (e) => {
     const on = toggleBookmark(detail);
     bookmarkBtn.classList.toggle("on", on);
     bookmarkBtn.setAttribute("aria-pressed", String(on));
+
+    if (bookmarkTab.classList.contains("active")) {
+      const movies = bookmarkedMovies();
+      renderMovies(movies);
+    }
     return;
   }
 
@@ -155,8 +160,6 @@ bookmarkTab.addEventListener("click", () => {
   bookmarkTab.classList.add("active");
   popularTab.classList.remove("active");
 
-  const bookmarks = loadBookmarks();
-  const movies = Array.from(bookmarks.values());
-
+  const movies = bookmarkedMovies();
   renderMovies(movies);
 });
